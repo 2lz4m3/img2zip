@@ -111,6 +111,7 @@ function App() {
       const fulfilled = results.filter(result => result.status === 'fulfilled');
       if (fulfilled.length < 1) {
         window.alert('There are no valid images.');
+        return;
       }
       const zipBlob = await jsZip.generateAsync(
         {
