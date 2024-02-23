@@ -12,6 +12,17 @@ import mime from 'mime-types';
 function App() {
   const [input, setInput] = useState('');
 
+  async function digestMessage(message: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(message);
+    const hash = await crypto.subtle.digest('SHA-1', data);
+    const hashArray = Array.from(new Uint8Array(hash));
+    const hashHex = hashArray
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+    return hashHex;
+  }
+
   async function fetchImage(url: string) {
     const response = await fetch(url);
     const blob = await response.blob();
@@ -44,12 +55,12 @@ function App() {
     const promises = [];
     for (const imageUrl of imageUrls) {
       promises.push(
-        fetchImage(imageUrl).then((blob) => {
+        fetchImage(imageUrl).then(async (blob) => {
           const extension = mime.extension(blob.type);
+          const hash = await digestMessage(imageUrl);
           let filename = filenamifyUrl(imageUrl);
-          if (!filename.endsWith(`.${extension}`)) {
-            filename = `${filename}.${extension}`;
-          }
+          filename = filename.substring(0, 200);
+          filename = `${filename}_${hash}.${extension}`;
           jsZip.file(filename, blob);
         })
       );
