@@ -5,6 +5,7 @@ import { TextareaAutosize } from '@mui/base/TextareaAutosize';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/system/Box';
 import { Button } from '@mui/material';
+import CircularProgress from '@mui/material/CircularProgress';
 import JSZip from 'jszip';
 import filenamifyUrl from 'filenamify-url';
 import mime from 'mime-types';
@@ -14,6 +15,7 @@ function App() {
   const [input, setInput] = useState('');
   const [rows, setRows] = useState<Row[]>([]);
   const [urls, setUrls] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
 
   function updateRow(url: string, status: Status, description?: string) {
     const row = rows.find((row) => row.url === url);
@@ -42,11 +44,17 @@ function App() {
       if (trimmedLine === '') {
         return false;
       }
+
+      // allow http: or https:
       try {
-        new URL(trimmedLine);
+        const url = new URL(trimmedLine);
+        if (!/^https?:$/.test(url.protocol)) {
+          return false;
+        }
       } catch (e) {
         return false;
       }
+
       return true;
     });
 
@@ -71,8 +79,11 @@ function App() {
   }
 
   async function startDownload() {
+    setLoading(true);
+
     if (urls.length < 1) {
       window.alert('There are no valid URLs.');
+      setLoading(false);
       return;
     }
 
@@ -118,6 +129,7 @@ function App() {
       const fulfilled = results.filter(result => result.status === 'fulfilled');
       if (fulfilled.length < 1) {
         window.alert('There are no valid images.');
+        setLoading(false);
         return;
       }
       const zipBlob = await jsZip.generateAsync(
@@ -128,6 +140,7 @@ function App() {
       );
       const fileUrl = URL.createObjectURL(zipBlob);
       window.open(fileUrl);
+      setLoading(false);
     });
   }
 
@@ -165,7 +178,22 @@ function App() {
             onClick={() => {
               void startDownload();
             }}
-          >Download</Button>
+            disabled={loading || urls.length < 1}
+          >
+            Download
+            {loading && (
+              <CircularProgress
+                size={24}
+                sx={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  marginTop: '-12px',
+                  marginLeft: '-12px',
+                }}
+              />
+            )}
+          </Button>
           <Box sx={{ my: 2 }}>
             <Table rows={rows} />
           </Box>
