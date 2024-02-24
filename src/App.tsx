@@ -1,5 +1,10 @@
 import { useEffect, useState } from 'react';
 import FormGroup from '@mui/material/FormGroup';
+import FormControl from '@mui/material/FormControl';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import FormLabel from '@mui/material/FormLabel';
+import Radio from '@mui/material/Radio';
+import RadioGroup from '@mui/material/RadioGroup';
 import Container from '@mui/material/Container';
 import { TextareaAutosize } from '@mui/base/TextareaAutosize';
 import Typography from '@mui/material/Typography';
@@ -14,6 +19,8 @@ function App() {
   const [input, setInput] = useState('');
   const [rows, setRows] = useState<Row[]>([]);
   const [urls, setUrls] = useState<string[]>([]);
+  const [fetchType, setFetchType] = useState<FetchType>('api');
+  type FetchType = 'api' | 'img';
 
   function updateRow(url: string, status: Status, description?: string) {
     const row = rows.find((row) => row.url === url);
@@ -81,10 +88,44 @@ function App() {
     const promises = [];
     for (const imageUrl of urls) {
       updateRow(imageUrl, 'downloading');
-      promises.push((async () => {
+
+      let dataUrl = '';
+      if (fetchType === 'img') {
+        const img = document.createElement('img');
+        img.loading = 'eager';
+        img.crossOrigin = 'anonymous';
+        img.src = imageUrl;
+        try {
+          await img.decode();
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          if (!context) {
+            return;
+          }
+          canvas.width = img.width;
+          canvas.height = img.height;
+          context.drawImage(img, 0, 0);
+          dataUrl = canvas.toDataURL('image/png');
+        } catch (error) {
+          let message = 'decode failed';
+          if (error instanceof Error) {
+            message = `decode failed: ${error.toString()}`;
+          }
+          updateRow(imageUrl, 'failed', message);
+          const promise = Promise.reject(new Error(message));
+          promises.push(promise);
+          continue;
+        }
+      }
+
+      promises.push((async (dataUrl) => {
         let response: Response;
         try {
-          response = await fetch(imageUrl);
+          if (typeof (dataUrl) === 'string' && dataUrl.length > 0) {
+            response = await fetch(dataUrl);
+          } else {
+            response = await fetch(imageUrl);
+          }
           if (!response.ok) {
             const message = 'response status code is not in 200-299';
             updateRow(imageUrl, 'failed', message);
@@ -111,7 +152,7 @@ function App() {
         filename = filename.substring(0, 200);
         filename = `${filename}_${hash}.${extension}`;
         jsZip.file(filename, blob);
-      })());
+      })(dataUrl));
     }
 
     await Promise.allSettled(promises).then(async (results) => {
@@ -133,6 +174,7 @@ function App() {
 
   useEffect(() => {
     updateTable();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [input]);
 
   return (
@@ -142,10 +184,28 @@ function App() {
           img2zip
         </Typography>
         <Typography variant="body2" gutterBottom>
-          Fetch the images, zip them, and download it.<br />
-          Depending on the configuration of the image hosting server, this tool may be restricted by your browser&aposs <a href="https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy#cross-origin_network_access" target="_blank" rel="noopener noreferrer">same-origin policy</a>.
+          Fetch the images, zip them, and download it.
         </Typography>
         <Box>
+          <FormGroup sx={{ my: 2 }}>
+            <FormControl>
+              <FormLabel id="algorithm">Fetch images via:</FormLabel>
+              <RadioGroup
+                row
+                value={fetchType}
+                onChange={(event) => {
+                  setFetchType(event.target.value as FetchType);
+                }}
+              >
+                <FormControlLabel value="api" control={<Radio />} label="Fetch API" />
+                <FormControlLabel value="img" control={<Radio />} label="<img> element" />
+              </RadioGroup>
+              <Typography variant="caption" gutterBottom>
+                Fetch API: Depending on the configuration of the image hosting server, this fetch type may be restricted by your browser&apos;s <a href="https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy#cross-origin_network_access" target="_blank" rel="noopener noreferrer">same-origin policy</a>.<br />
+                &lt;img&gt; element: This fetch type will not restricted by your browser&apos;s same-origin policy, but the downloaded images will be in PNG format.
+              </Typography>
+            </FormControl>
+          </FormGroup>
           <FormGroup sx={{ my: 2 }}>
             <TextareaAutosize
               id="input"
