@@ -11,6 +11,7 @@ export type Status = 'waiting' | 'downloading' | 'successful' | 'failed';
 export interface Row {
   url: string,
   status: Status,
+  description: string,
 }
 
 export default function DenseTable({ rows }: { rows: Row[] }) {
@@ -22,7 +23,8 @@ export default function DenseTable({ rows }: { rows: Row[] }) {
       >
         <TableHead>
           <TableRow key="header">
-            <TableCell sx={{ width: 100 }}>Status</TableCell>
+            <TableCell sx={{ minWidth: 100 }}>Status</TableCell>
+            <TableCell sx={{ minWidth: 200 }}>Description</TableCell>
             <TableCell>URL</TableCell>
           </TableRow>
         </TableHead>
@@ -34,15 +36,14 @@ export default function DenseTable({ rows }: { rows: Row[] }) {
                   key={row.url}
                   sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                 >
-                  <TableCell component="th" scope="row" sx={{ width: 100 }}>
-                    {row.status}
-                  </TableCell>
-                  <TableCell>{row.url}</TableCell>
+                  <TableCell>{row.status}</TableCell>
+                  <TableCell>{row.description}</TableCell>
+                  <TableCell sx={{ overflowWrap: 'anywhere' }}>{row.url}</TableCell>
                 </TableRow>
               ))
               :
               <TableRow>
-                <TableCell colSpan={2}>
+                <TableCell colSpan={3}>
                   no valid URLs.
                 </TableCell>
               </TableRow>

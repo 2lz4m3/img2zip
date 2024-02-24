@@ -15,10 +15,11 @@ function App() {
   const [rows, setRows] = useState<Row[]>([]);
   const [urls, setUrls] = useState<string[]>([]);
 
-  function setStatus(url: string, status: Status) {
+  function updateRow(url: string, status: Status, description?: string) {
     const row = rows.find((row) => row.url === url);
     if (row) {
       row.status = status;
+      row.description = description ?? '';
     }
     setRows([...rows]);
   }
@@ -59,7 +60,8 @@ function App() {
       newRows.push(
         {
           url,
-          status: 'waiting'
+          status: 'waiting',
+          description: '',
         }
       );
       setRows(newRows);
@@ -78,24 +80,30 @@ function App() {
 
     const promises = [];
     for (const imageUrl of urls) {
-      setStatus(imageUrl, 'downloading');
+      updateRow(imageUrl, 'downloading');
       promises.push((async () => {
         let response: Response;
         try {
           response = await fetch(imageUrl);
           if (!response.ok) {
-            setStatus(imageUrl, 'failed');
-            return Promise.reject(new Error('response status code is not in 200-299'));
+            const message = 'response status code is not in 200-299';
+            updateRow(imageUrl, 'failed', message);
+            return Promise.reject(new Error(message));
           }
-          setStatus(imageUrl, 'successful');
+          updateRow(imageUrl, 'successful');
         } catch (error) {
-          setStatus(imageUrl, 'failed');
-          return Promise.reject(new Error('fetch failed'));
+          let message = 'fetch failed';
+          if (error instanceof Error) {
+            message = error.toString();
+          }
+          updateRow(imageUrl, 'failed', message);
+          return Promise.reject(new Error(message));
         }
         const blob = await response.blob();
         if (!blob.type.startsWith('image/')) {
-          setStatus(imageUrl, 'failed');
-          return Promise.reject(new Error('not an image file'));
+          const message = `not an image file type: ${blob.type}`;
+          updateRow(imageUrl, 'failed', message);
+          return Promise.reject(new Error(message));
         }
         const extension = mime.extension(blob.type);
         const hash = await digestMessage(imageUrl);
@@ -107,7 +115,6 @@ function App() {
     }
 
     await Promise.allSettled(promises).then(async (results) => {
-      console.log(results);
       const fulfilled = results.filter(result => result.status === 'fulfilled');
       if (fulfilled.length < 1) {
         window.alert('There are no valid images.');
@@ -136,7 +143,7 @@ function App() {
         </Typography>
         <Typography variant="body2" gutterBottom>
           Fetch the images, zip them, and download it.<br />
-          Depending on the configuration of the image hosting server, this tool may be restricted by your browser's <a href="https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy#cross-origin_network_access" target="_blank" rel="noopener noreferrer">same-origin policy</a>.
+          Depending on the configuration of the image hosting server, this tool may be restricted by your browser&aposs <a href="https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy#cross-origin_network_access" target="_blank" rel="noopener noreferrer">same-origin policy</a>.
         </Typography>
         <Box>
           <FormGroup sx={{ my: 2 }}>
