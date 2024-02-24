@@ -133,6 +133,7 @@ function App() {
 
   useEffect(() => {
     updateTable();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [input]);
 
   return (
@@ -143,7 +144,7 @@ function App() {
         </Typography>
         <Typography variant="body2" gutterBottom>
           Fetch the images, zip them, and download it.<br />
-          Depending on the configuration of the image hosting server, this tool may be restricted by your browser&aposs <a href="https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy#cross-origin_network_access" target="_blank" rel="noopener noreferrer">same-origin policy</a>.
+          Depending on the configuration of the image hosting server, this tool may be restricted by your browser&apos;s <a href="https://developer.mozilla.org/en-US/docs/Web/Security/Same-origin_policy#cross-origin_network_access" target="_blank" rel="noopener noreferrer">same-origin policy</a>.
         </Typography>
         <Box>
           <FormGroup sx={{ my: 2 }}>
