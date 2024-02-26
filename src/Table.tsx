@@ -14,11 +14,27 @@ export interface Row {
   description: string,
 }
 
+function getStatusColor(status: Status): string {
+  if (status === 'waiting') {
+    return 'text.primary';
+  } else if (status === 'downloading') {
+    return 'info.main';
+  } else if (status === 'successful') {
+    return 'success.main';
+  }
+  return 'error.main';
+}
+
+
 export default function DenseTable({ rows }: { rows: Row[] }) {
 
   return (
-    <TableContainer component={Paper}>
+    <TableContainer
+      component={Paper}
+      sx={{ maxHeight: 440 }}
+    >
       <Table
+        stickyHeader
         size="small"
       >
         <TableHead>
@@ -36,7 +52,9 @@ export default function DenseTable({ rows }: { rows: Row[] }) {
                   key={row.url}
                   sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                 >
-                  <TableCell>{row.status}</TableCell>
+                  <TableCell
+                    sx={{ color: getStatusColor(row.status) }}
+                  >{row.status}</TableCell>
                   <TableCell>{row.description}</TableCell>
                   <TableCell sx={{ overflowWrap: 'anywhere' }}>{row.url}</TableCell>
                 </TableRow>
