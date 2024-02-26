@@ -9,7 +9,9 @@ import CircularProgress from '@mui/material/CircularProgress';
 import JSZip from 'jszip';
 import filenamifyUrl from 'filenamify-url';
 import mime from 'mime-types';
-import { default as Table, Row, Status } from './Table.tsx'
+import { default as Table, Row, Status } from './Table.tsx';
+import { format } from '@formkit/tempo';
+
 
 function App() {
   const [input, setInput] = useState('');
@@ -139,7 +141,12 @@ function App() {
         }
       );
       const fileUrl = URL.createObjectURL(zipBlob);
-      window.open(fileUrl);
+      const link = document.createElement('a');
+      const datetime = format(new Date(), 'YYYYMMDD_HHmmss');
+      link.download = `img2zip_${datetime}.zip`;
+      link.href = fileUrl;
+      link.click();
+      URL.revokeObjectURL(fileUrl);
       setLoading(false);
     });
   }
